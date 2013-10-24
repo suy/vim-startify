@@ -581,17 +581,14 @@ function! s:session_write(spath)
   endtry
 
   if exists('g:startify_session_savevars') || exists('g:startify_session_savecmds')
-    execute 'split' a:spath
+    " put these commands into the session file
+    let cmds = get(g:, 'startify_session_savecmds', [])
+    " put these existing variables into the session file
+    let vars = map(filter(get(g:, 'startify_session_savevars', []), 'exists(v:val)'),
+          \ '"let ". v:val ." = ". strtrans(string(eval(v:val)))')
 
-    " put existing variables from savevars into session file
-    call append(line('$')-3, map(filter(get(g:, 'startify_session_savevars', []), 'exists(v:val)'), '"let ". v:val ." = ". strtrans(string(eval(v:val)))'))
-
-    " put commands from savecmds into session file
-    call append(line('$')-3, get(g:, 'startify_session_savecmds', []))
-
-    setlocal bufhidden=delete
-    silent update
-    silent hide
+    let sessionlines = readfile(a:spath)
+    call writefile(sessionlines[:-4] + vars + cmds + sessionlines[-3:], a:spath)
   endif
 endfunction
 
