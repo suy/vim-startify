@@ -11,6 +11,7 @@ endif
 let g:autoloaded_startify = 1
 
 " Init: values {{{1
+let s:relative_path    = get(g:, 'startify_relative_path')
 let s:numfiles         = get(g:, 'startify_files_number', 10)
 let s:show_special     = get(g:, 'startify_enable_special', 1)
 let s:restore_position = get(g:, 'startify_restore_position')
@@ -297,6 +298,7 @@ function! s:show_files(cnt) abort
   let cnt     = a:cnt
   let num     = s:numfiles
   let entries = {}
+  let mod     = s:relative_path ? ':.' : ''
 
   if !empty(v:oldfiles)
     if exists('s:last_message')
@@ -317,7 +319,7 @@ function! s:show_files(cnt) abort
       let entries[fullpath] = 1
       let index = s:get_index_as_string(cnt)
 
-      call append('$', '   ['. index .']'. repeat(' ', (3 - strlen(index))) . fname)
+      call append('$', '   ['. index .']'. repeat(' ', (3 - strlen(index))) . fnamemodify(fname, mod))
       execute 'nnoremap <buffer>' index ':edit' fnameescape(fname) '<bar> call <sid>check_user_options()<cr>'
 
       let cnt += 1
