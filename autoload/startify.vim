@@ -382,6 +382,11 @@ function! s:open_buffer(entry)
     execute a:entry.cmd
   elseif a:entry.type == 'session'
     execute a:entry.cmd a:entry.path
+  elseif a:entry.type == 'repository'
+    execute a:entry.cmd a:entry.path
+    call filter(g:startify_list_order, 'v:val !~ "repositories"')
+    call filter(g:startify_list_order, 'v:val !~ "bookmarks"')
+    Startify
   elseif a:entry.type == 'file'
     if line2byte('$') == -1
       execute 'edit' a:entry.path
@@ -532,6 +537,51 @@ function! s:show_bookmarks() abort
       let fname = substitute(fname, '\[', '\[[]', 'g')
     endif
     call s:register(line('$'), index, 'file', 'edit', fname)
+    let s:entry_number += 1
+  endfor
+
+  call append('$', '')
+endfunction
+
+" Function: s:show_repositories {{{1
+function! s:show_repositories() abort
+  let oldfiles = call(get(g:, 'startify_enable_unsafe') ? 's:filter_oldfiles_unsafe' : 's:filter_oldfiles',
+        \ ['', s:relative_path])
+
+  let repositories = []
+  for [absolute_path, entry_path] in oldfiles
+    if has('win32')
+      let absolute_path = substitute(absolute_path, '\[', '\[[]', 'g')
+    endif
+    let dir = fnamemodify(absolute_path, ':p:h')
+    for vcs in [ '.git', '.hg', '.bzr', '.svn' ]
+      let root = finddir(vcs, dir .';')
+      if !empty(root)
+        call add(repositories, fnamemodify(root, ':h'))
+      endif
+    endfor
+  endfor
+  call uniq(sort(repositories))
+
+  if exists('g:startify_repositories')
+    call extend(repositories, g:startify_repositories, 0)
+  endif
+
+  if empty(repositories)
+    return
+  endif
+
+  if exists('s:last_message')
+    call s:print_section_header()
+  endif
+
+  for repo in repositories
+    let index = s:get_index_as_string(s:entry_number)
+    call append('$', '   ['. index .']'. repeat(' ', (3 - strlen(index))) . repo)
+    if has('win32')
+      let repo = substitute(repo, '\[', '\[[]', 'g')
+    endif
+    call s:register(line('$'), index, 'repository', 'cd', repo)
     let s:entry_number += 1
   endfor
 
